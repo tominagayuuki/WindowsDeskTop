@@ -225,10 +225,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// 描画初期化処理
 	//頂点データ
 	XMFLOAT3 vertices[] = {
-		{-0.5f,-0.5f,0.0f},
-		{-0.5f,+0.5f,0.0f},
-		{+0.5f,-0.5f,0.0f},
+	{-0.5f, -0.5f, 0.0f},//左下
+	{ +0.5f,-0.5f,0.0f },//右下
+	{ -0.5f,0.0f,0.0f },//左中
+	{ +0.5f,0.0f,0.0f },//右中
+	{ -0.5f,+0.5f,0.0f },//左上
+	{ +0.5f,+0.5f,0.0f },//右上
 	};
+	//XMFLOAT3 vertices[] = {
+	//	{-0.5f,-0.5f,0.0f},//左下
+	//	{-0.5f,+0.5f,0.0f},//左上
+	//	{+0.5f,-0.5f,0.0f},//右下
+	//	{+0.5f,-0.5f,0.0f},//右下
+	//	{-0.5f,+0.5f,0.0f},//左上
+	//	{+0.5f,+0.5f,0.0f},//右上
+	//};
 	//頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
 	UINT sizeVB = static_cast<UINT>(sizeof(XMFLOAT3) * _countof(vertices));
 	//頂点ブッファの設定
@@ -430,7 +441,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ConstBufferDataMaterial* constMapMaterial = nullptr;
 	result = constBuffMaterial->Map(0, nullptr, (void**)&constMapMaterial);
 	assert(SUCCEEDED(result));
-	constMapMaterial->color = XMFLOAT4(1.0f, 0.0f, 0.0f,0.5f);
+	constMapMaterial->color = XMFLOAT4(1.0f, 1.0f, 1.0f,1.0f);
 	while (true) {
 		//値を書き込むと自動的に転送される
 		
@@ -502,7 +513,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		//定数ブッファビュー(CBV)の設定コマンド
 		commandList->SetGraphicsRootConstantBufferView(0, constBuffMaterial->GetGPUVirtualAddress());
 		// 描画コマンド
-		commandList->DrawInstanced(_countof(vertices), 1, 0, 0); // 全ての頂点を使って描画
+		commandList->DrawInstanced(6, 1, 0, 0); // 全ての頂点を使って描画
 
 		//4.描画コマンドここまで
 
