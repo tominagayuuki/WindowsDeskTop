@@ -232,10 +232,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	};
 	//頂点データ
 	Vertex vertices[] = {
-		{{  0.0f,100.0f,0.0f},{0.0f,1.0f}},
-		{{  0.0f,  0.0f,0.0f},{0.0f,0.0f}},
-		{{100.0f,100.0f,0.0f},{1.0f,1.0f}},
-		{{100.0f,  0.0f,0.0f},{1.0f,0.0f}},
+		{{-50.0f,-50.0f,50.0f},{0.0f,1.0f}},
+		{{-50.0f, 50.0f,50.0f},{0.0f,0.0f}},
+		{{ 50.0f,-50.0f,50.0f},{1.0f,1.0f}},
+		{{ 50.0f, 50.0f,50.0f},{1.0f,0.0f}},
 	};
 	//インデックスデータ
 	unsigned short indices[] =
@@ -486,11 +486,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	assert(SUCCEEDED(result));
 	//t単位行列を代入
 	constMapTransform->mat = XMMatrixIdentity();
-	constMapTransform->mat.r[0].m128_f32[0] = 2.0f / 1280.0f;
-	constMapTransform->mat.r[1].m128_f32[1] = -2.0f / 720.0f;
-	constMapTransform->mat.r[3].m128_f32[0] =-1.0f;
-	constMapTransform->mat.r[3].m128_f32[1] = 1.0f;
+	//変換
+	constMapTransform->mat = XMMatrixOrthographicOffCenterLH(
+		0, 0,
+		0, 0,
+		0, 0
+	);
+	//透視投影行列の計算
+	XMMATRIX matProjection =
+		XMMatrixPerspectiveFovLH(
+			XMConvertToRadians(45.0f),
+			(float)1200 / 700,
+			0.1f, 1000.0f
+		);
 
+	//定数ブッファに転送
+	constMapTransform->mat = matProjection;
 	//インデックスデータ全体のサイズ
 	UINT sizeIB = static_cast<UINT>(sizeof(uint16_t) * _countof(indices));
 
