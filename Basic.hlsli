@@ -1,6 +1,6 @@
-cbuffer ConstBufferDataMaterial : register(b0)
+cbuffer ConstBufferDataTransform : register(b1)
 {
-	float4 color;
+	matrix mat;
 }
 
 
