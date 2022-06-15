@@ -232,10 +232,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	};
 	//頂点データ
 	Vertex vertices[] = {
-		{{-50.0f,-50.0f,50.0f},{0.0f,1.0f}},
-		{{-50.0f, 50.0f,50.0f},{0.0f,0.0f}},
-		{{ 50.0f,-50.0f,50.0f},{1.0f,1.0f}},
-		{{ 50.0f, 50.0f,50.0f},{1.0f,0.0f}},
+		{{-50.0f,-50.0f,0.0f},{0.0f,1.0f}},//左下
+		{{-50.0f, 50.0f,0.0f},{0.0f,0.0f}},//左上
+		{{ 50.0f,-50.0f,0.0f},{1.0f,1.0f}},//右下
+		{{ 50.0f, 50.0f,0.0f},{1.0f,0.0f}},//右上
 	};
 	//インデックスデータ
 	unsigned short indices[] =
@@ -499,9 +499,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			(float)1200 / 700,
 			0.1f, 1000.0f
 		);
+	//ビュー変換行列
+	XMMATRIX matView;
+	XMFLOAT3 eye(0, 0, -100);
+	XMFLOAT3 target(0, 0,0);
+	XMFLOAT3 up(0, 1, 0);
 
+	matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
+
+	float angle = 0.0f;
 	//定数ブッファに転送
-	constMapTransform->mat = matProjection;
+	constMapTransform->mat = matView * matProjection;
 	//インデックスデータ全体のサイズ
 	UINT sizeIB = static_cast<UINT>(sizeof(uint16_t) * _countof(indices));
 
@@ -643,7 +651,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	//ハンドルのさす位置にシェーダーリソースビュー作成
 	device->CreateShaderResourceView(texBuff, &srvDesc, srvHandle);
 
-
+	
 	/////////////////////////////////////ループここから//////////////////////////////////
 	while (true) {
 		//値を書き込むと自動的に転送される
@@ -687,6 +695,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			FLOAT clearColor[] = { 0.9f,0.25f,0.5f,0.0f };
 			commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		}
+		
+		if (key[DIK_D] || key[DIK_A]) {
+			if (key[DIK_D]) { angle += XMConvertToRadians(1.0f); }
+			else if (key[DIK_A]) {angle -= XMConvertToRadians(1.0f); }
+
+			//angleラジアンだけY軸周りに回転、半径は-100
+			eye.x = -100 * sinf(angle);
+			eye.z = -100 * cosf(angle);
+
+			matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
+		}
+		//定数ブッファに転送
+		constMapTransform->mat = matView * matProjection;
+
 		//4.描画コマンドここから
 		//ビューポート設定コマンド
 		D3D12_VIEWPORT viewport{};
