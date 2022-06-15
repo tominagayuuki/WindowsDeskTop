@@ -492,6 +492,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		0, 0,
 		0, 0
 	);
+
+	XMFLOAT3 scale;
+	XMFLOAT3 rotation;
+	XMFLOAT3 position;
+
+	//値の初期化
+	scale = { 1.0f,0.5f,1.0f };
+	rotation = { 0.0f,0.0f,0.0f };
+	position = { 0.0f,0.0f,0.0f };
+	//ワールド変換行列
+	XMMATRIX matWorld;
+	
+
+	XMMATRIX matScale;//スケーリング行列
+	matScale = XMMatrixScaling(scale.x,scale.y, scale.z);
+
+	XMMATRIX matRot;//回転行列
+	matRot = XMMatrixIdentity();
+	matRot *= XMMatrixRotationZ(rotation.z);
+	matRot *= XMMatrixRotationX(rotation.x);
+	matRot *= XMMatrixRotationY(rotation.y);
+	
 	//透視投影行列の計算
 	XMMATRIX matProjection =
 		XMMatrixPerspectiveFovLH(
@@ -508,8 +530,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
 
 	float angle = 0.0f;
+	
 	//定数ブッファに転送
-	constMapTransform->mat = matView * matProjection;
+	constMapTransform->mat = matWorld * matView * matProjection;
 	//インデックスデータ全体のサイズ
 	UINT sizeIB = static_cast<UINT>(sizeof(uint16_t) * _countof(indices));
 
@@ -706,8 +729,28 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 			matView = XMMatrixLookAtLH(XMLoadFloat3(&eye), XMLoadFloat3(&target), XMLoadFloat3(&up));
 		}
+		
+		
+		if (key[DIK_UP] || key[DIK_DOWN] || key[DIK_RIGHT] || key[DIK_LEFT]) {
+			//座標を移動する処理(Z座標)
+			if (key[DIK_UP]) { position.z += 1.0f; }
+			else if (key[DIK_DOWN]) { position.z -= 1.0f; }
+			if (key[DIK_RIGHT]) { position.x += 1.0f; }
+			else if (key[DIK_LEFT]) { position.x -= 1.0f; }
+		}
+
+		XMMATRIX matTrans;//平行移動行列
+		matTrans = XMMatrixTranslation(position.x, position.y, position.z);//平行移動
+		//ワールド行列に単位行列を代入
+		matWorld = XMMatrixIdentity();
+		matWorld *= matScale;//ワールド行列にスケーリングを反映
+		matWorld *= matRot;//ワールド行列に回転を反映
+		matWorld *= matTrans;//ワールド行列に平行移動を反映
+
 		//定数ブッファに転送
-		constMapTransform->mat = matView * matProjection;
+		constMapTransform->mat = matWorld * matView * matProjection;
+
+
 
 		//4.描画コマンドここから
 		//ビューポート設定コマンド
