@@ -36,7 +36,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	OutputDebugStringA("Hello,DirectX!!\n");
 
 	const int window_width = 1200;
-	const int window_height = 700;
+	const int window_height = 1000;
 
 	WNDCLASSEX w{};
 	w.cbSize = sizeof(WNDCLASSEX);
@@ -200,6 +200,48 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		device->CreateRenderTargetView(backBuffers[i], &rtvDesc, rtvHandle);
 	}
 
+	//リソース設定(深度バッファ)
+	D3D12_RESOURCE_DESC depthResourceDesc{};
+	depthResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthResourceDesc.Width = window_width;//レンダーターゲットに合わせる
+	depthResourceDesc.Height = window_height;//レンダーターゲットに合わせる
+	depthResourceDesc.DepthOrArraySize = 1;
+	depthResourceDesc.Format = DXGI_FORMAT_D32_FLOAT;//深度値フォーマット
+	depthResourceDesc.SampleDesc.Count = 1;
+	depthResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;//デプスステンシル
+
+	//深度値用ヒーププロパティ
+	D3D12_HEAP_PROPERTIES depthHeapProp{};
+	depthHeapProp.Type= D3D12_HEAP_TYPE_DEFAULT;
+	//深度値のクリア設定
+	D3D12_CLEAR_VALUE depthClearValue{};
+	depthClearValue.DepthStencil.Depth = 1.0f;
+	depthClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+	//リソース生成
+	ID3D12Resource* depthBuff = nullptr;
+	result = device->CreateCommittedResource(
+		&depthHeapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&depthResourceDesc,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		&depthClearValue,
+		IID_PPV_ARGS(&depthBuff));
+	//深度ビュー用デスクリプタヒープ生成
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	ID3D12DescriptorHeap* dsvHeap = nullptr;
+	result = device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
+	//深度ビュー作成
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	device->CreateDepthStencilView(
+		depthBuff,
+		&dsvDesc,
+		dsvHeap->GetCPUDescriptorHandleForHeapStart());
+	
+
 	ID3D12Fence* fence = nullptr;
 	UINT64 fenceval = 0;
 	result = device->CreateFence(fenceval, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
@@ -232,16 +274,58 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	};
 	//頂点データ
 	Vertex vertices[] = {
-		{{-50.0f,-50.0f,0.0f},{0.0f,1.0f}},//左下
-		{{-50.0f, 50.0f,0.0f},{0.0f,0.0f}},//左上
-		{{ 50.0f,-50.0f,0.0f},{1.0f,1.0f}},//右下
-		{{ 50.0f, 50.0f,0.0f},{1.0f,0.0f}},//右上
+		//前
+		{{-5.0f,-5.0f,-5.0f},{0.0f,1.0f}},//左下
+		{{-5.0f, 5.0f,-5.0f},{0.0f,0.0f}},//左上
+		{{ 5.0f,-5.0f,-5.0f},{1.0f,1.0f}},//右下
+		{{ 5.0f, 5.0f,-5.0f},{1.0f,0.0f}},//右上
+		//後ろ
+		{{-5.0f,-5.0f,5.0f},{0.0f,1.0f}},//左下
+		{{-5.0f, 5.0f,5.0f},{0.0f,0.0f}},//左上
+		{{ 5.0f,-5.0f,5.0f},{1.0f,1.0f}},//右下
+		{{ 5.0f, 5.0f,5.0f},{1.0f,0.0f}},//右上
+		//左
+		{{-5.0f,-5.0f,-5.0f},{0.0f,1.0f}},//左下
+		{{-5.0f, -5.0f,5.0f},{0.0f,0.0f}},//左上
+		{{-5.0f, 5.0f,-5.0f},{1.0f,1.0f}},//右下
+		{{-5.0f,  5.0f,5.0f},{1.0f,0.0f}},//右上
+		//右
+		{{5.0f,-5.0f,-5.0f},{0.0f,1.0f}},//左下
+		{{5.0f, -5.0f,5.0f},{0.0f,0.0f}},//左上
+		{{5.0f, 5.0f,-5.0f},{1.0f,1.0f}},//右下
+		{{5.0f,  5.0f,5.0f},{1.0f,0.0f}},//右上
+		//下
+		{{-5.0f,-5.0f,-5.0f},{0.0f,1.0f}},//左下
+		{{ 5.0f,-5.0f,-5.0f},{0.0f,0.0f}},//左上
+		{{-5.0f,-5.0f, 5.0f},{1.0f,1.0f}},//右下
+		{{ 5.0f,-5.0f, 5.0f},{1.0f,0.0f}},//右上
+		//上
+		{{-5.0f,5.0f,-5.0f},{0.0f,1.0f}},//左下
+		{{ 5.0f,5.0f,-5.0f},{0.0f,0.0f}},//左上
+		{{-5.0f,5.0f, 5.0f},{1.0f,1.0f}},//右下
+		{{ 5.0f,5.0f, 5.0f},{1.0f,0.0f}},//右上
 	};
 	//インデックスデータ
 	unsigned short indices[] =
 	{
+		//前
 		0,1,2,//三角形一つ目
 		1,2,3,//三角形二つ目
+		//後
+		4,5,6,//三角形三つ目
+		5,6,7,//三角形四つ目
+		//左
+		8,9,10,//三角形五つ目
+		9,10,11,//三角形六つ目
+		//右
+		12,13,14,//三角形七つ目
+		13,14,15,//三角形八つ目
+		//下
+		16,17,18,//三角形九つ目
+		17,18,19,//三角形十つ目
+		//上
+		20,21,22,//三角形十一つ目
+		21,22,23,//三角形十二つ目
 	};
 	//頂点データ全体のサイズ = 頂点データ一つ分のサイズ * 頂点データの要素数
 	UINT sizeVB = static_cast<UINT>(sizeof(vertices[0]) * _countof(vertices));
@@ -349,6 +433,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	//グラフィックスパイプライン設定
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc{};
+
+	//デプスステンシルステートの設定
+	pipelineDesc.DepthStencilState.DepthEnable = true;
+	pipelineDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	pipelineDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	pipelineDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
 	//シェーダーの設定
 	pipelineDesc.VS.pShaderBytecode = vsBlob->GetBufferPointer();
 	pipelineDesc.VS.BytecodeLength = vsBlob->GetBufferSize();
@@ -590,7 +681,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	ScratchImage scratchImg{};
 	//WICテクスチャのロード
 	result = LoadFromWICFile(
-		L"Resources/bird_pink.png",
+		L"Resources/mario.jpg",
 		WIC_FLAGS_NONE,
 		&metadata, scratchImg);
 	ScratchImage mipChain{};
@@ -709,14 +800,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		// レンダ―ターゲットビューのハンドルを取得
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr += bbIndex * device->GetDescriptorHandleIncrementSize(rtvHeapDesc.Type);
-		commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+		commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 
 		//3.画面クリア
 		FLOAT clearColor[] = { 0.1f,0.25f,0.5f,0.0f };//0.1f,0.25f,0.5f,0.0f
 		commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		if (key[DIK_SPACE]) {
 			FLOAT clearColor[] = { 0.9f,0.25f,0.5f,0.0f };
 			commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+			commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 		}
 		
 		if (key[DIK_D] || key[DIK_A]) {
